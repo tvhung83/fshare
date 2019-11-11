@@ -1,4 +1,4 @@
-package handler
+package api
 
 import (
 	"fmt"
@@ -7,7 +7,8 @@ import (
 	"net/http"
 )
 
-func Handler(w http.ResponseWriter, r *http.Request) {
+/*FileHandler returns direct URL from raw URL*/
+func FileHandler(w http.ResponseWriter, r *http.Request) {
 	resp, _ := http.Get("https://www.fshare.vn/site/login")
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
