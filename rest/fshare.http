@@ -1,0 +1,37 @@
+### Login
+POST https://api.fshare.vn/api/user/login
+User-Agent: okhttp/3.6.0
+
+{
+    "user_email": {{username}},
+    "password": {{password}},
+    "app_key": {{app_key}}
+}
+
+### Download
+@file_id="H7AKPLKT61FQ8JS"
+POST https://api.fshare.vn/api/session/download
+User-Agent: okhttp/3.6.0
+Cookie: session_id={{session_id}}
+
+{
+    "token": {{token}},
+    "url": "https://www.fshare.vn/file/{{file_id}}"
+}
+
+### Get Folder
+@folder_id="H7AKPLKT61FQ8JS"
+POST https://api.fshare.vn/api/fileops/getFolderList
+
+{
+    "token": {{token}},
+    "url": "https://www.fshare.vn/folder/{{folder_id}}",
+    "dirOnly": 0,
+    "pageIndex": 0,
+    "limit": 100
+}
+
+### Get Profile
+GET https://api.fshare.vn/api/user/get
+User-Agent: okhttp/3.6.0
+Cookie: session_id={{session_id}}
