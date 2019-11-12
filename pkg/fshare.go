@@ -97,7 +97,7 @@ func perror(err error) {
 }
 
 func req(method string, path string, body []byte, sessionID string) ([]byte, error) {
-	req, err := http.NewRequest(method, baseURL+url, bytes.NewBuffer(body))
+	req, err := http.NewRequest(method, baseURL+path, bytes.NewBuffer(body))
 	perror(err)
 	req.Header.Set("User-Agent", "okhttp/3.6.0")
 	req.Header.Set("Content-Type", "application/json")
@@ -105,7 +105,7 @@ func req(method string, path string, body []byte, sessionID string) ([]byte, err
 		req.Header.Set("cookie", fmt.Sprintf("session_id=%s", sessionID))
 	}
 
-	log.Printf("> %s to %s ...", method, url)
+	log.Printf("> %s to %s ...", method, path)
 	resp, err := client.Do(req)
 	perror(err)
 	defer resp.Body.Close()
