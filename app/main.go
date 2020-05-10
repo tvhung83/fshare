@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 
-	api "github.com/tvhung83/fshare/api"
+	"github.com/tvhung83/fshare/api"
 	fshare "github.com/tvhung83/fshare/pkg"
+	"gopkg.in/robfig/cron.v2"
 	"gopkg.in/yaml.v2"
 )
 
@@ -23,7 +25,12 @@ func processError(err error) {
 }
 
 func readFile(cfg *Config) {
-	f, err := os.Open("config.yml")
+	ex, err := os.Executable()
+	if err != nil {
+		processError(err)
+	}
+	exPath := filepath.Dir(ex)
+	f, err := os.Open(exPath + "/config.yml")
 	if err != nil {
 		processError(err)
 	}
@@ -38,7 +45,22 @@ func readFile(cfg *Config) {
 func main() {
 	var cfg Config
 	readFile(&cfg)
+
 	api.Client = fshare.NewClient(cfg.Username, cfg.Password)
+	api.Client.Login()
+
+	// init cron job to check for logged in status and re-login
+	c := cron.New()
+	c.AddFunc("@hourly", func() {
+		if !api.Client.IsLoggedIn() {
+			api.Client.Login()
+		}
+	})
+	c.Start()
+
+	http.HandleFunc("/ping", api.Ping)
+	http.HandleFunc("/login", api.Login)
 	http.HandleFunc("/file/", api.FileHandler)
+	http.HandleFunc("/folder/", api.FolderHandler)
 	http.ListenAndServe(":"+cfg.Port, nil)
 }
