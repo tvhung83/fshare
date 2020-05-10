@@ -46,7 +46,7 @@ func main() {
 	var cfg Config
 	readFile(&cfg)
 
-	api.Client = fshare.NewClient(cfg.Username, cfg.Password)
+	api.Client = &fshare.Client{Username: cfg.Username, Password: cfg.Password}
 	api.Client.Login()
 
 	// init cron job to check for logged in status and re-login

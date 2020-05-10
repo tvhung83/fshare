@@ -1,6 +1,6 @@
 ### Login
-POST https://api.fshare.vn/api/user/login
-User-Agent: okhttp/3.6.0
+POST https://api2.fshare.vn/api/user/login
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.4 Safari/605.1.15
 
 {
     "user_email": {{username}},
@@ -10,8 +10,8 @@ User-Agent: okhttp/3.6.0
 
 ### Download
 @file_id="H7AKPLKT61FQ8JS"
-POST https://api.fshare.vn/api/session/download
-User-Agent: okhttp/3.6.0
+POST https://api2.fshare.vn/api/session/download
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.4 Safari/605.1.15
 Cookie: session_id={{session_id}}
 
 {
@@ -20,18 +20,18 @@ Cookie: session_id={{session_id}}
 }
 
 ### Get Folder
-@folder_id="H7AKPLKT61FQ8JS"
-POST https://api.fshare.vn/api/fileops/getFolderList
+@folder_id="L2A1YJGGK998"
+POST https://api2.fshare.vn/api/fileops/getFolderList
 
 {
     "token": {{token}},
     "url": "https://www.fshare.vn/folder/{{folder_id}}",
     "dirOnly": 0,
-    "pageIndex": 0,
+    "pageIndex": 1,
     "limit": 100
 }
 
 ### Get Profile
-GET https://api.fshare.vn/api/user/get
-User-Agent: okhttp/3.6.0
+GET https://api2.fshare.vn/api/user/get
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.4 Safari/605.1.15
 Cookie: session_id={{session_id}}

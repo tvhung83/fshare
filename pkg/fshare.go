@@ -7,12 +7,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/cookiejar"
 	"strings"
 	"time"
 
 	"github.com/avast/retry-go"
-	"golang.org/x/net/publicsuffix"
 )
 
 /*Client wrapper type*/
@@ -20,6 +18,8 @@ type Client struct {
 	Username string
 	Password string
 	Token    string
+	Session  string
+	Time     time.Time
 }
 
 /*HTTPError captures status code and API's response body, in order to passthrough to client */
@@ -34,35 +34,28 @@ func (e *HTTPError) Error() string {
 
 const baseURL = "https://api2.fshare.vn/api"
 const filePrefix = "https://www.fshare.vn/file/"
+const appKey = "GUxft6Beh3Bf8qKP7GC2IplYJZz1A53JQfRwne0R"
 
-var jar http.CookieJar
-var client *http.Client
+var client = &http.Client{}
 
 const loginPayload = `{
-		"user_email": "%s",
-		"password": "%s",
-		"app_key": "GUxft6Beh3Bf8qKP7GC2IplYJZz1A53JQfRwne0R"
-	}`
+	"user_email": "%s",
+	"password": "%s",
+	"app_key": "%s"
+}`
 
 const downloadPayload = `{
-		"token": "%s",
-		"url": "%s"
-	}`
+	"token": "%s",
+	"url": "%s"
+}`
 
 const folderPayload = `{
-		"token": "%s",
-		"url": "%s",
-		"dirOnly": 0,
-		"pageIndex": %d,
-		"limit": 1000
-	}`
-
-/*NewClient constructor & login*/
-func NewClient(username string, password string) *Client {
-	cl := &Client{Username: username, Password: password}
-	cl.initHTTPClient()
-	return cl
-}
+	"token": "%s",
+	"url": "%s",
+	"dirOnly": 0,
+	"pageIndex": %d,
+	"limit": 1000
+}`
 
 /*Login for first time (after construction) or re-login (after session expired)*/
 func (c *Client) Login() error {
@@ -70,8 +63,8 @@ func (c *Client) Login() error {
 		func() error {
 			log.Printf("-- Logging %s", c.Username)
 
-			body := []byte(fmt.Sprintf(loginPayload, c.Username, c.Password))
-			body, statusCode, err := req("POST", "/user/login", body)
+			body := []byte(fmt.Sprintf(loginPayload, c.Username, c.Password, appKey))
+			body, statusCode, err := c.req("POST", "/user/login", body)
 			err = c.wrapError(body, statusCode, err)
 			if statusCode != 200 {
 				return err
@@ -84,6 +77,9 @@ func (c *Client) Login() error {
 				return &HTTPError{StatusCode: 500, Body: []byte(err.Error())}
 			}
 			c.Token = session["token"].(string)
+			c.Session = session["session_id"].(string)
+			c.Time = time.Now()
+			log.Printf("< Logged In: %s", body)
 			return nil
 		},
 		retry.Attempts(10),
@@ -101,11 +97,15 @@ func perror(err error) {
 	}
 }
 
-func req(method string, path string, body []byte) ([]byte, int, error) {
+func (c *Client) req(method string, path string, body []byte) ([]byte, int, error) {
 	req, err := http.NewRequest(method, baseURL+path, bytes.NewBuffer(body))
 	perror(err)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.4 Safari/605.1.15")
 	req.Header.Set("Content-Type", "application/json")
+	if len(c.Session) > 0 {
+		log.Printf("> Cookie: session_id=%s ...", c.Session)
+		req.Header.Set("Cookie", fmt.Sprintf("session_id=%s", c.Session))
+	}
 
 	log.Printf("> %s to %s ...", method, path)
 	resp, err := client.Do(req)
@@ -134,7 +134,7 @@ func (c *Client) IsLoggedIn() bool {
 /*GetProfile returns user profile if logged in*/
 func (c *Client) GetProfile() ([]byte, int, error) {
 	log.Printf("~~ Get user profile")
-	return req("GET", "/user/get", []byte{})
+	return c.req("GET", "/user/get", []byte{})
 }
 
 /*Download get direct URL*/
@@ -147,7 +147,7 @@ func (c *Client) Download(url string) ([]byte, int, error) {
 	log.Printf("** Download %s", url)
 
 	body := []byte(fmt.Sprintf(downloadPayload, c.Token, url))
-	return req("POST", "/session/download", body)
+	return c.req("POST", "/session/download", body)
 }
 
 /*GetFolder returns list of File*/
@@ -155,14 +155,7 @@ func (c *Client) GetFolder(url string, page int) ([]byte, int, error) {
 	log.Printf("^^ Get Folder: %s", url)
 
 	body := []byte(fmt.Sprintf(folderPayload, c.Token, url, page))
-	return req("POST", "/fileops/getFolderList", body)
-}
-
-func (c *Client) initHTTPClient() {
-	jar, _ = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	client = &http.Client{
-		Jar: jar,
-	}
+	return c.req("POST", "/fileops/getFolderList", body)
 }
 
 func (c *Client) wrapError(body []byte, statusCode int, err error) error {

@@ -56,13 +56,11 @@ func FolderHandler(w http.ResponseWriter, r *http.Request) {
 
 /*Ping check login status */
 func Ping(w http.ResponseWriter, r *http.Request) {
-	if Client.IsLoggedIn() {
-		w.WriteHeader(200)
-		w.Write([]byte("OK"))
-	} else {
-		w.WriteHeader(500)
-		w.Write([]byte("NOK"))
-	}
+	w.Header().Set("Session", Client.Session)
+	w.Header().Set("Token", Client.Token)
+	w.Header().Set("Login-time", Client.Time.Local().String())
+	body, statusCode, err := Client.GetProfile()
+	writeTo(w, body, statusCode, err)
 }
 
 /*Login force re-login */
