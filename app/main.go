@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -52,7 +53,9 @@ func main() {
 	// init cron job to check for logged in status and re-login
 	c := cron.New()
 	c.AddFunc("@hourly", func() {
-		if !api.Client.IsLoggedIn() {
+		logged := api.Client.IsLoggedIn()
+		log.Printf("Cron job > %t", logged)
+		if !logged {
 			api.Client.Login()
 		}
 	})
